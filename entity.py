@@ -9,6 +9,8 @@ from render_order import RenderOrder
 if TYPE_CHECKING:
     from components.ai import BaseAI
     from components.consumable import Consumable
+    from components.equipment import Equipment
+    from components.equippable import Equippable
     from components.fighter import Fighter
     from components.inventory import Inventory
     from components.level import Level
@@ -25,15 +27,15 @@ class Entity:
     parent: Union[GameMap, Inventory]
 
     def __init__(
-            self,
-            parent: Optional[GameMap] = None,
-            x: int = 0,
-            y: int = 0,
-            char: str = "?",
-            color: Tuple[int, int, int] = (255, 255, 255),
-            name: str = "<Unnamed>",
-            blocks_movement: bool = False,
-            render_order: RenderOrder = RenderOrder.CORPSE,
+        self,
+        parent: Optional[GameMap] = None,
+        x: int = 0,
+        y: int = 0,
+        char: str = "?",
+        color: Tuple[int, int, int] = (255, 255, 255),
+        name: str = "<Unnamed>",
+        blocks_movement: bool = False,
+        render_order: RenderOrder = RenderOrder.CORPSE,
     ):
         self.x = x
         self.y = y
@@ -61,7 +63,7 @@ class Entity:
         return clone
 
     def place(self, x: int, y: int, gamemap: Optional[GameMap] = None) -> None:
-        """Place this entity at a new location.  Handles moving across GameMaps."""
+        """Place this entitiy at a new location.  Handles moving across GameMaps."""
         self.x = x
         self.y = y
         if gamemap:
@@ -83,7 +85,6 @@ class Entity:
         self.y += dy
 
 
-
 class Actor(Entity):
     def __init__(
         self,
@@ -94,6 +95,7 @@ class Actor(Entity):
         color: Tuple[int, int, int] = (255, 255, 255),
         name: str = "<Unnamed>",
         ai_cls: Type[BaseAI],
+        equipment: Equipment,
         fighter: Fighter,
         inventory: Inventory,
         level: Level,
@@ -110,6 +112,9 @@ class Actor(Entity):
 
         self.ai: Optional[BaseAI] = ai_cls(self)
 
+        self.equipment: Equipment = equipment
+        self.equipment.parent = self
+
         self.fighter = fighter
         self.fighter.parent = self
 
@@ -124,16 +129,18 @@ class Actor(Entity):
         """Returns True as long as this actor can perform actions."""
         return bool(self.ai)
 
+
 class Item(Entity):
     def __init__(
-            self,
-            *,
-            x: int = 0,
-            y: int = 0,
-            char: str = "?",
-            color: Tuple[int, int, int] = (255, 255, 255),
-            name: str = "<Unnamed>",
-            consumable: Consumable,
+        self,
+        *,
+        x: int = 0,
+        y: int = 0,
+        char: str = "?",
+        color: Tuple[int, int, int] = (255, 255, 255),
+        name: str = "<Unnamed>",
+        consumable: Optional[Consumable] = None,
+        equippable: Optional[Equippable] = None,
     ):
         super().__init__(
             x=x,
@@ -146,4 +153,12 @@ class Item(Entity):
         )
 
         self.consumable = consumable
-        self.consumable.parent = self
+
+
+        if self.consumable:
+            self.consumable.parent = self
+
+        self.equippable = equippable
+
+        if self.equippable:
+            self.equippable.parent = self
